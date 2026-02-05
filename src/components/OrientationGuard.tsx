@@ -1,28 +1,42 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 
 export default function OrientationGuard({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [isPortrait, setIsPortrait] = useState(false);
+  // ⛔ Start as null — unknown on first render
+  const [isPortrait, setIsPortrait] = useState<boolean | null>(null);
 
   useEffect(() => {
     const checkOrientation = () => {
-      // Detects if we're in portrait mode
+      if (typeof window === 'undefined') return;
+
       const portrait =
         window.innerHeight > window.innerWidth && window.innerWidth < 1024;
+
       setIsPortrait(portrait);
     };
 
     checkOrientation();
-    window.addEventListener("resize", checkOrientation);
-    return () => window.removeEventListener("resize", checkOrientation);
+    window.addEventListener('resize', checkOrientation);
+
+    return () => window.removeEventListener('resize', checkOrientation);
   }, []);
 
+  // ⏳ Prevent hydration mismatch
+  if (isPortrait === null) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <p className="text-white opacity-60">Loading…</p>
+      </div>
+    );
+  }
+
+  // 🚫 Portrait mode → block
   if (isPortrait) {
     return (
       <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center text-center p-8">
@@ -45,16 +59,19 @@ export default function OrientationGuard({
             />
           </svg>
         </motion.div>
+
         <h2 className="text-3xl font-bold text-white mb-4">
           Rotate your device
         </h2>
+
         <p className="text-gray-400 text-lg max-w-xs">
-          To be able to play correctly, you need to put your phone in{" "}
+          To be able to play correctly, you need to put your phone in{' '}
           <b>landscape mode</b>.
         </p>
       </div>
     );
   }
 
+  // ✅ Landscape → allow app
   return <>{children}</>;
 }
